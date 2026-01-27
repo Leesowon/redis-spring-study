@@ -1,0 +1,4 @@
+#singleServerConfig:
+#  address: "redis://10.11.12.13:6379"
+#  connectionPoolSize: 64
+#  connectionMinimumIdleSize: 10
