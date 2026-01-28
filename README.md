@@ -1,4 +1,4 @@
-# Redis cache, chat application with WebSocket study
+# Redis caching, chat application with WebSocket study
 
 ## Commit 1: sect 5: spring webflux caching
 커밋 날짜: 2026-01-27
