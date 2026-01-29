@@ -19,8 +19,8 @@ public class ChatRoomSocketConfig {
     @Bean
     public HandlerMapping handlerMapping(){
         Map<String, WebSocketHandler> map = Map.of(
-                "/chat", chatRoomService // endpoint : /chat -> chatRoomService로 연결?
+                "/chat", chatRoomService // endpoint : /chat -> chatRoomService로 연결
         );
-        return new SimpleUrlHandlerMapping(map, -1); // -1은 뭐임?
+        return new SimpleUrlHandlerMapping(map, -1);
     }
 }
