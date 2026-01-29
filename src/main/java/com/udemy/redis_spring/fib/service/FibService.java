@@ -35,6 +35,8 @@ public class FibService {
         long calculationTime = System.currentTimeMillis() - startTime;
         log.info("💻 Calculation completed: fib({}) = {} (took {}ms)", index, result, calculationTime);
 
+        System.out.println("calculating fib for " + index);
+
         return result;
     }
 
