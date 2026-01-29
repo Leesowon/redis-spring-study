@@ -50,6 +50,11 @@
 				</exclusion>
 			</exclusions>
 		</dependency>
+		<!-- AOP 지원: Cache Hit/Miss 로깅을 위한 AspectJ 기반 AOP -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-aop</artifactId>
+		</dependency>
 		<dependency>
 			<groupId>org.projectlombok</groupId>
 			<artifactId>lombok</artifactId>
