@@ -12,10 +12,17 @@
 #### Fibonacci 캐싱 기능
 - `src/main/java/com/udemy/redis_spring/fib/config/RedissonCacheConfig.java`
   - Redisson 캐시 설정 클래스
+  - `math:fib` 캐시 매니저 설정
 - `src/main/java/com/udemy/redis_spring/fib/controller/FibController.java`
   - Fibonacci API 컨트롤러
+  - `/fib/{number}` - 계산 및 캐싱
+  - `/fib/{number}/clear` - 캐시 삭제
 - `src/main/java/com/udemy/redis_spring/fib/service/FibService.java`
   - Fibonacci 계산 및 캐싱 서비스
+  - `@Cacheable` 어노테이션을 통한 자동 캐싱
+- `src/main/java/com/udemy/redis_spring/fib/aspect/CacheLoggingAspect.java`
+  - AOP 기반 캐시 Hit/Miss 로깅
+  - 캐시 성능 모니터링 (실행 시간 측정)
 
 #### 설정 파일
 - `src/main/resources/application.properties`
@@ -31,6 +38,8 @@
 - Spring WebFlux 기반 프로젝트 초기 설정
 - Redis를 활용한 캐싱 기능 구현
 - Fibonacci 계산 결과를 Redis에 캐싱하여 성능 최적화
+- AOP를 활용한 캐시 Hit/Miss 모니터링 및 로깅
+- 다중 서버 환경에서 캐시 공유 테스트 가능
 
 ## Commit 2: sect 8: Chat Application With WebSocket
 
@@ -42,23 +51,77 @@
 - `src/main/java/com/udemy/redis_spring/chat/config/ChatRoomSocketConfig.java`
   - WebSocket 엔드포인트 설정 클래스
   - `/chat` 경로를 ChatRoomService와 매핑
+  - `SimpleUrlHandlerMapping`을 통한 정확한 경로 매칭
 
 #### 채팅 서비스
 - `src/main/java/com/udemy/redis_spring/chat/service/ChatRoomService.java`
   - WebSocket 기반 채팅방 서비스
   - Redis Pub/Sub을 활용한 실시간 메시지 브로드캐스트
-  - Redis List를 활용한 채팅 히스토리 저장
+  - Redis List를 활용한 채팅 히스토리 저장 (무제한)
   - Subscribe 로직: 클라이언트 메시지 → Redis 저장 및 발행
   - Publisher 로직: Redis 메시지 → 클라이언트 전달
+  - **로깅 기능**: 메시지 송수신 로그 (서버 포트, 방 이름, 발신자, 메시지 내용)
+  - **JSON 파싱**: Jackson ObjectMapper를 사용한 메시지 구조 파싱
 
 #### 프론트엔드
 - `src/main/resources/static/chat.html`
   - 채팅 UI (Bootstrap 사용)
   - WebSocket 클라이언트 구현
   - 채팅방 입장 및 실시간 메시지 송수신 기능
+  - Exit 버튼: 채팅방 나가기 및 재접속 기능
+  - Enter 키 전송: 메시지 입력 시 Enter 키로 전송 가능
+  - 자동 스크롤: 새 메시지 도착 시 자동으로 최신 메시지로 스크롤
+  - 빈 메시지 차단: 공백만 입력된 메시지 전송 방지
+
+#### 문서
+- `MULTI_SERVER_TEST.md`
+  - 다중 서버 테스트 가이드
+  - Redis Pub/Sub을 통한 서버 간 통신 테스트 방법
+  - 채팅 및 캐시 공유 시나리오
 
 ### 기능 요약
 - WebSocket 기반 실시간 채팅 애플리케이션 구현
 - Redis Pub/Sub을 통한 멀티 서버 환경 지원
 - 채팅 히스토리 기능 (나중에 입장한 사용자도 이전 메시지 확인 가능)
-- 채팅방별 격리 (쿼리 파라미터로 방 선택)
+- 채팅방별 격리 (쿼리 파라미터로 방 선택: `?room=game`)
+- 구조화된 로깅 시스템 (SLF4J)
+- 연결 관리 (재접속 가능)
+
+---
+
+## 프로젝트 설정
+
+### Redis 연결 정보
+- **Host**: `10.11.12.13` (다중 서버 테스트용 공유 Redis)
+- **Port**: `6379`
+- 설정 위치: `src/main/resources/application.properties`
+
+### 주요 기술 스택
+- **Spring Boot**: 3.5.10
+- **Spring WebFlux**: 리액티브 프로그래밍
+- **Redisson**: Redis 클라이언트 (3.47.0)
+- **WebSocket**: 실시간 양방향 통신
+- **Jackson**: JSON 처리
+- **SLF4J**: 로깅
+
+### 실행 방법
+
+#### 단일 서버 실행
+```bash
+./mvnw spring-boot:run
+```
+- 기본 포트: 8080
+- 채팅 접속: http://localhost:8080/chat.html
+- Fibonacci API: http://localhost:8080/fib/{number}
+
+#### 다중 서버 실행 (테스트)
+```bash
+# 터미널 1 - 8080 포트
+./mvnw spring-boot:run
+
+# 터미널 2 - 8081 포트
+./mvnw spring-boot:run -Dspring-boot.run.arguments=--server.port=8081
+
+# 터미널 3 - 8082 포트
+./mvnw spring-boot:run -Dspring-boot.run.arguments=--server.port=8082
+```
