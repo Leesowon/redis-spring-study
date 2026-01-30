@@ -41,6 +41,11 @@
         <button class="form-control btn btn-secondary" type="button" id="start">Start</button>
     </div>
 
+    <!-- Exit button to disconnect from chat room -->
+    <div class="mb-3 text-end invisible" id="exit-control">
+        <button class="btn btn-danger" type="button" id="exit">Exit</button>
+    </div>
+
     <!--
        Show this div only when start button is pressed.
     -->
@@ -71,6 +76,9 @@
 
 <script>
 
+    // Global websocket variable
+    let websocket = null;
+
     // will be executed after pressing start button
    const chatFunction = () => {
 
@@ -83,10 +91,12 @@
      const send = document.getElementById('send');
      const chatDiv = document.getElementById('chat-div');
      const startControl = document.getElementById('start-control');
+     const exitControl = document.getElementById('exit-control');
 
 
      chatDiv.classList.remove("invisible");
      startControl.classList.add("invisible");
+     exitControl.classList.remove("invisible");
 
 
      // ws://localhost:8080/chat?room=some-name
@@ -109,30 +119,61 @@
          let ele = document.createElement("p");
          ele.innerHTML = `<b>${obj.sender}:</b>&nbsp; ${obj.message}`;
          history.appendChild(ele);
+         // 스크롤을 최신 메시지로 자동 이동
+         history.scrollTop = history.scrollHeight;
      }
 
      websocket.onopen = (evt) => {
          let ele = document.createElement("p");
          ele.innerHTML = `<b>CONNECTED</b>`;
          history.appendChild(ele);
+         // 스크롤을 최신 메시지로 자동 이동
+         history.scrollTop = history.scrollHeight;
      }
 
      websocket.onclose = (evt) => {
+         // Clear history and show only DISCONNECTED message
+         history.innerHTML = "";
          let ele = document.createElement("p");
          ele.innerHTML = `<b>DISCONNECTED</b>`;
          history.appendChild(ele);
+
+         // Toggle UI elements
+         chatDiv.classList.add("invisible");
+         startControl.classList.remove("invisible");
+         exitControl.classList.add("invisible");
      }
 
      const sendMessage = () => {
+         const messageText = message.value.trim();
+         if (messageText === "") return; // 빈 메시지 전송 방지
+
          let obj = {
            sender : name,
-           message : message.value
+           message : messageText
          }
          message.value = "";
          websocket.send(JSON.stringify(obj));
      }
 
+     const exitChat = () => {
+         if (websocket) {
+             websocket.close();  // This will trigger onclose event
+         }
+     }
+
+     // Send 버튼 클릭 이벤트
      send.addEventListener('click', sendMessage);
+
+     // 메시지 입력 필드에서 Enter 키 이벤트
+     message.addEventListener('keypress', (e) => {
+         if (e.key === 'Enter') {
+             e.preventDefault(); // 폼 제출 방지
+             sendMessage();
+         }
+     });
+
+     document.getElementById('exit').addEventListener('click', exitChat);
 
    }
 
