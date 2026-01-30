@@ -1,10 +1,15 @@
 package com.udemy.redis_spring.chat.service;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.redisson.api.RListReactive;
 import org.redisson.api.RTopicReactive;
 import org.redisson.api.RedissonReactiveClient;
 import org.redisson.client.codec.StringCodec;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.socket.WebSocketHandler;
 import org.springframework.web.reactive.socket.WebSocketMessage;
@@ -22,8 +27,14 @@ import java.net.URI;
 @Service
 public class ChatRoomService implements WebSocketHandler {
 
+    private static final Logger log = LoggerFactory.getLogger(ChatRoomService.class);
+    private final ObjectMapper objectMapper = new ObjectMapper();
+
     @Autowired
     private RedissonReactiveClient client;
+
+    @Value("${server.port:8080}")
+    private String serverPort;
 
     /**
      * WebSocket 연결 처리
@@ -42,10 +53,11 @@ public class ChatRoomService implements WebSocketHandler {
         // Subscribe 로직: 클라이언트 메시지 수신 → Redis List 저장 → Redis Topic 발행
         webSocketSession.receive()
                 .map(WebSocketMessage::getPayloadAsText)
+                .doOnNext(msg -> logMessage(room, msg, "RECEIVED")) // 메시지 수신 로그
 //                .flatMap(topic::publish) // history 추가 전 코드
                 .flatMap(msg -> list.add(msg).then(topic.publish(msg))) // Redis List 저장 후 Topic 발행
-                .doOnError(System.out::println)
-                .doFinally(s -> System.out.println("Subscriber finally " + s))
+                .doOnError(err -> log.error("❌ Error in subscriber: {}", err.getMessage()))
+                .doFinally(s -> log.info("🔌 Subscriber disconnected: {}", s))
                 .subscribe(); // WebSocket 메시지 스트림 구독 시작
 
         // Publisher 로직: Redis Topic 구독 → WebSocket 클라이언트에게 전송
@@ -53,9 +65,10 @@ public class ChatRoomService implements WebSocketHandler {
         // - WebSocket 관점: Publisher (클라이언트에게 메시지 발행)
         Flux<WebSocketMessage> flux = topic.getMessages(String.class) // Redis Topic 구독 (실시간 메시지)
                 .startWith(list.iterator()) // 히스토리 먼저 전송 (과거 메시지)
+                .doOnNext(msg -> logMessage(room, msg, "PUBLISHED")) // 메시지 발행 로그
                 .map(webSocketSession::textMessage)
-                .doOnError(System.out::println)
-                .doFinally(s -> System.out.println("publisher finally " + s));
+                .doOnError(err -> log.error("❌ Error in publisher: {}", err.getMessage()))
+                .doFinally(s -> log.info("🔌 Publisher disconnected: {}", s));
 
         return webSocketSession.send(flux); // 클라이언트에게 메시지 전송
     }
@@ -72,5 +85,24 @@ public class ChatRoomService implements WebSocketHandler {
                 .getQueryParams()
                 .toSingleValueMap()
                 .getOrDefault("room", "default");
+    }
+
+    /**
+     * 채팅 메시지 로그 출력
+     * JSON 메시지를 파싱하여 누가, 어떤 메시지를 보냈는지 로그로 기록
+     */
+    private void logMessage(String room, String msg, String action) {
+        try {
+            JsonNode json = objectMapper.readTree(msg);
+            String sender = json.has("sender") ? json.get("sender").asText() : "Unknown";
+            String message = json.has("message") ? json.get("message").asText() : msg;
+
+            log.info("📨 [Server:{}] {} | Room: {} | Sender: {} | Message: {}",
+                    serverPort, action, room, sender, message);
+        } catch (Exception e) {
+            // JSON 파싱 실패 시 원본 메시지 로그
+            log.info("📨 [Server:{}] {} | Room: {} | Raw: {}",
+                    serverPort, action, room, msg);
+        }
     }
 }
