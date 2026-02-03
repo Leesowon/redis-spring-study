@@ -1,6 +1,6 @@
 # Redis caching, chat application with WebSocket study
 
-## Commit 1: sect 5: spring webflux caching
+## Sect 5: spring webflux caching
 커밋 날짜: 2026-01-27
 
 ### 생성된 파일
@@ -41,7 +41,7 @@
 - AOP를 활용한 캐시 Hit/Miss 모니터링 및 로깅
 - 다중 서버 환경에서 캐시 공유 테스트 가능
 
-## Commit 2: sect 8: Chat Application With WebSocket
+## Sect 8: Chat Application With WebSocket
 
 커밋 날짜 : 2026-01-28
 
