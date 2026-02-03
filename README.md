@@ -120,8 +120,8 @@
 ./mvnw spring-boot:run
 
 # 터미널 2 - 8081 포트
-./mvnw spring-boot:run -Dspring-boot.run.arguments=--server.port=8081
+.\mvnw spring-boot:run -Dspring-boot.run.arguments=--server.port=8081
 
 # 터미널 3 - 8082 포트
-./mvnw spring-boot:run -Dspring-boot.run.arguments=--server.port=8082
+.\mvnw spring-boot:run -Dspring-boot.run.arguments=--server.port=8082
 ```
