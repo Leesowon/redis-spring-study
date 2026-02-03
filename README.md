@@ -117,7 +117,7 @@
 #### 다중 서버 실행 (테스트)
 ```bash
 # 터미널 1 - 8080 포트
-./mvnw spring-boot:run
+.\mvnw spring-boot:run
 
 # 터미널 2 - 8081 포트
 .\mvnw spring-boot:run -Dspring-boot.run.arguments=--server.port=8081
